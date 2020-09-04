@@ -24,7 +24,7 @@ int link_procmap(struct ProcMap *pm) {
 	return 0;
 }
 
-void get_data(char *curr_line, size_t line_len, struct ProcMap *pm) {
+void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) {
 
 	char start_addr[MAX_STRLEN];
 	char end_addr[MAX_STRLEN];
@@ -89,7 +89,7 @@ void read_mapfile(FILE *fd) {
 	}
 }
 
-int prep_mapfile(long pid) {
+int prep_mapfile(const long pid) {
 
 	char filename[MAX_STRLEN];
 	FILE *fd;
