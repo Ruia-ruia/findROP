@@ -14,7 +14,7 @@
 struct ProcMap {
 	long int address_st;
 	long int address_en;
-  long int size;
+  	long int size;
 	char *permissions;
 	struct ProcMap *next;
 };
