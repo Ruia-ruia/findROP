@@ -112,22 +112,22 @@ int prep_mapfile(long pid) {
 
 int main(int argc, char *argv[]) {
 
-  if (argc < 2) {
+	if (argc < 2) {
 		printf("Not enough arguments.\n");
 		return -1;
 	}
 
-  pid_t pid;
+	pid_t pid;
 
-  //parse pid
-  pid = strtol(argv[1], NULL, 10);
-  if (pid == 0) {
-      if (errno = EINVAL) {
-          printf("Invalid process identifier. \
-                   Specifically, %d.\n", errno);
+	//parse pid
+	pid = strtol(argv[1], NULL, 10);
+	if (pid == 0) {
+	if (errno = EINVAL) {
+		printf("Invalid process identifier. \
+		   Specifically, %d.\n", errno);
 			    return -1;
-      }
-  }
+		}
+	}
 
 	prep_mapfile(pid);
 
