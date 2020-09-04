@@ -31,7 +31,7 @@ void get_data(char *curr_line, size_t line_len, struct ProcMap *pm) {
 	char perms[MAX_STRLEN];
 	long int address_st;
 	long int address_en;
-	int i, j, k;
+	unsigned int i, j, k;
 
 	//start addr
 	for (i = 0; curr_line[i] != '-'; i++) {
