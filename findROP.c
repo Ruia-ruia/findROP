@@ -122,11 +122,11 @@ int main(int argc, char *argv[]) {
 	//parse pid
 	pid = strtol(argv[1], NULL, 10);
 	if (pid == 0) {
-	if (errno = EINVAL) {
+	    if (errno == EINVAL) {
 		printf("Invalid process identifier. \
 		   Specifically, %d.\n", errno);
 			    return -1;
-		}
+            }
 	}
 
 	prep_mapfile(pid);
