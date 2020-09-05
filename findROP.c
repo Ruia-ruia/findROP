@@ -15,7 +15,7 @@
 enum { R, RW, RX, RWX };
 
 struct ProcMap {
-    long int pid;
+    	long int pid;
 	long int address_st;
 	long int address_en;
   	long int size;
@@ -27,15 +27,15 @@ struct ProcMap *pm_cursor;
 
 int link_procmap(struct ProcMap *pm) {
     
-    if (pm == NULL) return -1;
+	if (pm == NULL) return -1;
 
-    if (pm_head == NULL) {
-        pm_head = pm;
+	if (pm_head == NULL) {
+		pm_head = pm;
 
-    } else {
-        pm->next = pm_head;
-        pm_head = pm;
-    }
+	} else {
+		pm->next = pm_head;
+		pm_head = pm;
+	}
 
 	return 0;
 }
@@ -66,8 +66,8 @@ void get_data(const char *curr_line,
 	} if (k > MAX_STRLEN) return;
 	end_addr[k + 1] = '\0';
 
-    char *perms = malloc(MAX_STRLEN);
 	//permissions
+	char *perms = malloc(MAX_STRLEN);
 	for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
 		perms[k] = curr_line[j];
 		k++;
@@ -85,11 +85,11 @@ void get_data(const char *curr_line,
 		}
 	}
 
-    pm->pid = pid;
+    	pm->pid = pid;
 	pm->address_st = address_st;
 	pm->address_en = address_en;
 	pm->size = address_en - address_st;
-    pm->permissions = perms;   
+    	pm->permissions = perms;   
 }
 
 void read_mapfile(FILE *fd, const long pid) {
@@ -103,13 +103,13 @@ void read_mapfile(FILE *fd, const long pid) {
 
 		pm = malloc(sizeof(struct ProcMap));
 		get_data(curr_line, line_len, pm, pid);
-        //performs NULL test on pm as well 
+        	//performs NULL test on pm as well 
 		if (link_procmap(pm) < 0) continue; 
 
 	}
 
-    //initialise global cursor to start at head of list
-    pm_cursor = pm_head;
+    	//initialise global cursor to start at head of list
+    	pm_cursor = pm_head;
 }
 
 int prep_mapfile(const long pid) {
@@ -135,55 +135,54 @@ int prep_mapfile(const long pid) {
 
 void read_proc(struct ProcMap *pm) {
 
-    ptrace(PTRACE_ATTACH, pm->pid);
+    	ptrace(PTRACE_ATTACH, pm->pid);
 }
 
 struct ProcMap *rx_procmaps() {
-    /*
-        pm_cursor is a global pointer used to search
-        the linked list of procmap nodes for r-xp 
-        permission nodes (at first, pm_cursor == pm_head). 
-    */
-    struct ProcMap *tmp_pm;
+	/*
+	pm_cursor is a global pointer used to search
+	the linked list of procmap nodes for r-xp 
+	permission nodes (at first, pm_cursor == pm_head). 
+	*/
+	struct ProcMap *tmp_pm;
 
-    for (; pm_cursor != NULL; pm_cursor = pm_cursor->next) {
+	for (; pm_cursor != NULL; pm_cursor = pm_cursor->next) {
 
-        if (strncmp("r-xp", pm_cursor->permissions, 4) == 0) {
-            tmp_pm = pm_cursor;
-            pm_cursor = pm_cursor->next;
-            return tmp_pm; 
-        }
-    }
+		if (strncmp("r-xp", pm_cursor->permissions, 4) == 0) {
+			tmp_pm = pm_cursor;
+			pm_cursor = pm_cursor->next;
+			return tmp_pm; 
+		}
+	}
 
-    return pm_cursor;
+	return pm_cursor;
 }
 
 void search_procmaps(const unsigned int mode) {
     
-    struct ProcMap *moded_pm;
+	struct ProcMap *moded_pm;
 
-    switch (mode) {
-        case (RX):
+	switch (mode) {
+		case (RX):
 
-            moded_pm = rx_procmaps();
-            if (moded_pm == NULL) {
-                printf("Failed to get any RX procmaps\n");
-                return;
-            }
+			moded_pm = rx_procmaps();
+			if (moded_pm == NULL) {
+				printf("Failed to get any RX procmaps\n");
+				return;
+			}
 
-            printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
-            moded_pm->address_st, moded_pm->address_en, 
-            moded_pm->size, moded_pm->permissions, moded_pm->pid);
-            
-            break; 
+			printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
+			moded_pm->address_st, moded_pm->address_en, 
+			moded_pm->size, moded_pm->permissions, moded_pm->pid);
+			
+			break; 
+		default:
+			moded_pm = NULL;
+			return;
+	}
 
-        default:
-            moded_pm = NULL;
-            return;
-    }
-
-    //use rx_pm data to attach and scan proc memory
-    read_proc(moded_pm);
+	//use rx_pm data to attach and scan proc memory
+	read_proc(moded_pm);
 }
 
 int main(int argc, char *argv[]) {
@@ -205,13 +204,13 @@ int main(int argc, char *argv[]) {
             }
 	}
 
-    //open, read, populate ProcMap obj, link 
+    	//open, read, populate ProcMap obj, link 
 	if (prep_mapfile(pid) < 0) return -1;
     
-    //get r-xp maps and use PTRACE_ATTACH
-    search_procmaps(RX);
-    search_procmaps(RX);
-    search_procmaps(RX);
+	//get r-xp maps and use PTRACE_ATTACH
+	search_procmaps(RX);
+	search_procmaps(RX);
+	search_procmaps(RX);
 
 	return 0;
 }
