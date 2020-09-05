@@ -15,202 +15,202 @@
 enum { R, RW, RX, RWX };
 
 struct ProcMap {
-    	long int pid;
-	long int address_st;
-	long int address_en;
-  	long int size;
-	char *permissions;
-	struct ProcMap *next;
+        long int pid;
+        long int address_st;
+        long int address_en;
+        long int size;
+        char *permissions;
+        struct ProcMap *next;
 };
 struct ProcMap *pm_head;
 struct ProcMap *pm_cursor;
 
 int link_procmap(struct ProcMap *pm) {
-    
-	if (pm == NULL) return -1;
 
-	if (pm_head == NULL) {
-		pm_head = pm;
+        if (pm == NULL) return -1;
 
-	} else {
-		pm->next = pm_head;
-		pm_head = pm;
-	}
+        if (pm_head == NULL) {
+                pm_head = pm;
 
-	return 0;
+        } else {
+                pm->next = pm_head;
+                pm_head = pm;
+        }
+
+        return 0;
 }
 
 void get_data(const char *curr_line, 
-                const size_t line_len, 
-                    struct ProcMap *pm, 
-                        const long pid) {
+                    const size_t line_len, 
+                            struct ProcMap *pm, 
+                                    const long pid) {
 
-	char start_addr[MAX_STRLEN];
-	char end_addr[MAX_STRLEN];
-	long int address_st;
-	long int address_en;
-	unsigned int i, j, k;
+        char start_addr[MAX_STRLEN];
+        char end_addr[MAX_STRLEN];
+        long int address_st;
+        long int address_en;
+        unsigned int i, j, k;
 
-	//start address
-	for (i = 0; curr_line[i] != '-'; i++) {
-		start_addr[i] = curr_line[i];
+        //start address
+        for (i = 0; curr_line[i] != '-'; i++) {
+                start_addr[i] = curr_line[i];
 
-	} if (i > MAX_STRLEN) return;
-	start_addr[i] = '\0';
+        } if (i > MAX_STRLEN) return;
+        start_addr[i] = '\0';
 
-	//end address
-	for (j = i + 1, k = 0; curr_line[j] != ' '; j++) {
-		end_addr[k] = curr_line[j];
-		k++;
+        //end address
+        for (j = i + 1, k = 0; curr_line[j] != ' '; j++) {
+                end_addr[k] = curr_line[j];
+                k++;
 
-	} if (k > MAX_STRLEN) return;
-	end_addr[k + 1] = '\0';
+        } if (k > MAX_STRLEN) return;
+        end_addr[k + 1] = '\0';
 
-	//permissions
-	char *perms = malloc(MAX_STRLEN);
-	for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
-		perms[k] = curr_line[j];
-		k++;
+        //permissions
+        char *perms = malloc(MAX_STRLEN);
+        for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
+                perms[k] = curr_line[j];
+                k++;
 
-	} if (k > MAX_STRLEN) return;
-	perms[k] = '\0';
+        } if (k > MAX_STRLEN) return;
+        perms[k] = '\0';
 
-	address_st = strtol(start_addr, NULL, BASE16);
-	address_en = strtol(end_addr, NULL, BASE16);
+        address_st = strtol(start_addr, NULL, BASE16);
+        address_en = strtol(end_addr, NULL, BASE16);
 
-	if (address_st == 0 || address_en == 0) {
-		if (errno == EINVAL) {
-			printf("Could not convert addresses in maps file.\n");
-			return;
-		}
-	}
+        if (address_st == 0 || address_en == 0) {
+                if (errno == EINVAL) {
+                        printf("Could not convert addresses in maps file.\n");
+                        return;
+                }
+        }
 
-    	pm->pid = pid;
-	pm->address_st = address_st;
-	pm->address_en = address_en;
-	pm->size = address_en - address_st;
-    	pm->permissions = perms;   
+        pm->pid = pid;
+        pm->address_st = address_st;
+        pm->address_en = address_en;
+        pm->size = address_en - address_st;
+        pm->permissions = perms;   
 }
 
 void read_mapfile(FILE *fd, const long pid) {
 
-	char *curr_line;
-	size_t line_len;
-	struct ProcMap *pm;
+        char *curr_line;
+        size_t line_len;
+        struct ProcMap *pm;
 
-	//use heap for linked list nodes
-	while (getline(&curr_line, &line_len, fd) != -1) {
+        //use heap for linked list nodes
+        while (getline(&curr_line, &line_len, fd) != -1) {
 
-		pm = malloc(sizeof(struct ProcMap));
-		get_data(curr_line, line_len, pm, pid);
-        	//performs NULL test on pm as well 
-		if (link_procmap(pm) < 0) continue; 
+                pm = malloc(sizeof(struct ProcMap));
+                get_data(curr_line, line_len, pm, pid);
+                //performs NULL test on pm as well 
+                if (link_procmap(pm) < 0) continue; 
 
-	}
+        }
 
-    	//initialise global cursor to start at head of list
-    	pm_cursor = pm_head;
+        //initialise global cursor to start at head of list
+        pm_cursor = pm_head;
 }
 
 int prep_mapfile(const long pid) {
 
-	char filename[MAX_STRLEN];
-	FILE *fd;
+        char filename[MAX_STRLEN];
+        FILE *fd;
 
-	if (snprintf(filename, MAX_STRLEN, "/proc/%ld/maps", pid) < 0) {
-		return -1;
-	}
+        if (snprintf(filename, MAX_STRLEN, "/proc/%ld/maps", pid) < 0) {
+                return -1;
+        }
 
-	fd = fopen(filename, "r");
-	if (fd == NULL) {
-		printf("Could not open file.\n");
-		return -1;
-	}
+        fd = fopen(filename, "r");
+        if (fd == NULL) {
+                printf("Could not open file.\n");
+                return -1;
+        }
 
-	read_mapfile(fd, pid);
+        read_mapfile(fd, pid);
 
-	fclose(fd);
-	return 0;
+        fclose(fd);
+        return 0;
 }
 
 void read_proc(struct ProcMap *pm) {
 
-    	ptrace(PTRACE_ATTACH, pm->pid);
+        ptrace(PTRACE_ATTACH, pm->pid);
 }
 
 struct ProcMap *rx_procmaps() {
-	/*
-	pm_cursor is a global pointer used to search
-	the linked list of procmap nodes for r-xp 
-	permission nodes (at first, pm_cursor == pm_head). 
-	*/
-	struct ProcMap *tmp_pm;
+/*
+pm_cursor is a global pointer used to search
+the linked list of procmap nodes for r-xp 
+permission nodes (at first, pm_cursor == pm_head). 
+*/
+        struct ProcMap *tmp_pm;
 
-	for (; pm_cursor != NULL; pm_cursor = pm_cursor->next) {
+        for (; pm_cursor != NULL; pm_cursor = pm_cursor->next) {
 
-		if (strncmp("r-xp", pm_cursor->permissions, 4) == 0) {
-			tmp_pm = pm_cursor;
-			pm_cursor = pm_cursor->next;
-			return tmp_pm; 
-		}
-	}
+                if (strncmp("r-xp", pm_cursor->permissions, 4) == 0) {
+                        tmp_pm = pm_cursor;
+                        pm_cursor = pm_cursor->next;
+                        return tmp_pm; 
+                }
+        }
 
-	return pm_cursor;
+        return pm_cursor;
 }
 
 void search_procmaps(const unsigned int mode) {
-    
-	struct ProcMap *moded_pm;
 
-	switch (mode) {
-		case (RX):
+        struct ProcMap *moded_pm;
 
-			moded_pm = rx_procmaps();
-			if (moded_pm == NULL) {
-				printf("Failed to get any RX procmaps\n");
-				return;
-			}
+        switch (mode) {
+                case (RX):
+                        moded_pm = rx_procmaps();
+                        if (moded_pm == NULL) {
+                                printf("Failed to get any RX procmaps\n");
+                                return;
+                        }
 
-			printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
-			moded_pm->address_st, moded_pm->address_en, 
-			moded_pm->size, moded_pm->permissions, moded_pm->pid);
-			
-			break; 
-		default:
-			moded_pm = NULL;
-			return;
-	}
+                        printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
+                        moded_pm->address_st, moded_pm->address_en, 
+                        moded_pm->size, moded_pm->permissions, moded_pm->pid);
 
-	//use rx_pm data to attach and scan proc memory
-	read_proc(moded_pm);
+                        break;
+
+                default:
+                        moded_pm = NULL;
+                        return;
+        }
+
+        //use rx_pm data to attach and scan proc memory
+        read_proc(moded_pm);
 }
 
 int main(int argc, char *argv[]) {
 
-	if (argc < 2) {
-		printf("Not enough arguments.\n");
-		return -1;
-	}
+        if (argc < 2) {
+                printf("Not enough arguments.\n");
+                return -1;
+        }
 
-	pid_t pid;
+        pid_t pid;
 
-	//parse pid
-	pid = strtol(argv[1], NULL, BASE10);
-	if (pid == 0) {
-	    if (errno == EINVAL) {
-		printf("Invalid process identifier. \
-		   Specifically, %d.\n", errno);
-			    return -1;
-            }
-	}
+        //parse pid
+        pid = strtol(argv[1], NULL, BASE10);
+        if (pid == 0) {
+                if (errno == EINVAL) {
+                        printf("Invalid process identifier. \
+                        Specifically, %d.\n", errno);
+                        return -1;
+                }
+        }
 
-    	//open, read, populate ProcMap obj, link 
-	if (prep_mapfile(pid) < 0) return -1;
-    
-	//get r-xp maps and use PTRACE_ATTACH
-	search_procmaps(RX);
-	search_procmaps(RX);
-	search_procmaps(RX);
+        //open, read, populate ProcMap obj, link 
+        if (prep_mapfile(pid) < 0) return -1;
 
-	return 0;
+        //get r-xp maps and use PTRACE_ATTACH
+        search_procmaps(RX);
+        search_procmaps(RX);
+        search_procmaps(RX);
+
+        return 0;
 }
