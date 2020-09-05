@@ -95,7 +95,7 @@ void read_mapfile(FILE *fd) {
 
 		pm = malloc(sizeof(struct ProcMap));
 		get_data(curr_line, line_len, pm);
-        //performs NULL test on pm as well 
+        	//performs NULL test on pm as well 
 		if (link_procmap(pm) < 0) continue; 
 
 		printf("0x%lx\n0x%lx\n0x%lx\n\n", pm->address_st, pm->address_en, pm->size);
