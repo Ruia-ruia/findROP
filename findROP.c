@@ -23,15 +23,14 @@ struct ProcMap *pm_head = NULL;
 
 int link_procmap(struct ProcMap *pm) {
     
-    if (pm == NULL) return -1;
+	if (pm == NULL) return -1;
 
-    if (pm_head == NULL) {
-        pm_head = pm;
-
-    } else {
-        pm->next = pm_head;
-        pm_head = pm;
-    }
+	if (pm_head == NULL) {
+		pm_head = pm;
+	} else {
+		pm->next = pm_head;
+		pm_head = pm;
+	}
 
 	return 0;
 }
