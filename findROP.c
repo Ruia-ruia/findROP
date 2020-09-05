@@ -5,6 +5,7 @@
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 #include <sys/wait.h>
 #include <errno.h>
 
@@ -16,10 +17,10 @@
 enum { R, RW, RX, RWX };
 
 struct ProcMap {
-        long int pid;
+        unsigned long int pid;
         long int address_st;
         long int address_en;
-        long int size;
+        unsigned long int size;
         char *permissions;
         struct ProcMap *next;
 };
@@ -135,17 +136,24 @@ int prep_mapfile(const long pid) {
 }
 
 void read_proc(struct ProcMap *pm) {
-
         printf("Entered proc_map\n");
+
         long int curr_word;
+        int save_offset;
+        char *buf;
+        char *buf_cursor; //for char-wide granularity 
+
+        buf = malloc(pm->size);
 
         for (int i = 0; i < pm->size;  i += 8) {
                 curr_word = ptrace(PTRACE_PEEKTEXT, pm->pid, pm->address_st + i, NULL);
                 if (curr_word == BAD_WORD) return;
+
+                memcpy(&buf[i], &curr_word, 8);
                 printf("0x%lx\n", curr_word);
         }
 
-        //ptrace(PTRACE_DETACH)
+        free(buf);
 }
 
 struct ProcMap *rx_procmaps() {
@@ -184,7 +192,7 @@ int search_procmaps(const unsigned int mode) {
                 moded_pm->address_st, moded_pm->address_en, 
                 moded_pm->size, moded_pm->permissions, moded_pm->pid);
 
-                //use rx_pm data to attach and scan proc memory
+                //use moded_pm data to attach and scan proc memory
                 read_proc(moded_pm);
                 
                 break;
@@ -220,7 +228,7 @@ int main(int argc, char *argv[]) {
         //open, read, populate ProcMap obj, link 
         if (prep_mapfile(pid) < 0) return -1;
 
-        //attach to pid
+        //attach to process
         ptrace(PTRACE_ATTACH, pid, NULL, NULL);
         wait(NULL);
 
