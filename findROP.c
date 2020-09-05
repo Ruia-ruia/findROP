@@ -47,6 +47,7 @@ void get_data(const char *curr_line,
 
         char start_addr[MAX_STRLEN];
         char end_addr[MAX_STRLEN];
+        char *perms;
         long int address_st;
         long int address_en;
         unsigned int i, j, k;
@@ -67,7 +68,7 @@ void get_data(const char *curr_line,
         end_addr[k + 1] = '\0';
 
         //permissions
-        char *perms = malloc(MAX_STRLEN);
+        perms = malloc(MAX_STRLEN);
         for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
                 perms[k] = curr_line[j];
                 k++;
