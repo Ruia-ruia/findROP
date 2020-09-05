@@ -60,12 +60,12 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	end_addr[k + 1] = '\0';
 
 	//permissions
-	for (j = k + 1, k = 0; curr_line[j] != ' '; j++) {
+	for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
 		perms[k] = curr_line[j];
 		k++;
 
 	} if (k > MAX_STRLEN) return;
-	perms[k + 1] = '\0';
+	perms[k] = '\0';
 
 	address_st = strtol(start_addr, NULL, BASE16);
 	address_en = strtol(end_addr, NULL, BASE16);
@@ -81,7 +81,6 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	pm->address_en = address_en;
 	pm->size = address_en - address_st;
     	pm->permissions = perms;
-
 }
 
 void read_mapfile(FILE *fd) {
