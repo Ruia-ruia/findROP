@@ -11,6 +11,7 @@
 #define BASE16 16
 #define BASE10 10
 #define MAX_STRLEN 30
+#define BAD_WORD 0xffffffffffffffff
 
 enum { R, RW, RX, RWX };
 
@@ -135,7 +136,16 @@ int prep_mapfile(const long pid) {
 
 void read_proc(struct ProcMap *pm) {
 
-        ptrace(PTRACE_ATTACH, pm->pid);
+        printf("Entered proc_map\n");
+        long int curr_word;
+
+        for (int i = 0; i < pm->size;  i += 8) {
+                curr_word = ptrace(PTRACE_PEEKTEXT, pm->pid, pm->address_st + i, NULL);
+                if (curr_word == BAD_WORD) return;
+                printf("0x%lx\n", curr_word);
+        }
+
+        //ptrace(PTRACE_DETACH)
 }
 
 struct ProcMap *rx_procmaps() {
@@ -155,10 +165,10 @@ permission nodes (at first, pm_cursor == pm_head).
                 }
         }
 
-        return pm_cursor;
+        return NULL;
 }
 
-void search_procmaps(const unsigned int mode) {
+int search_procmaps(const unsigned int mode) {
 
         struct ProcMap *moded_pm;
 
@@ -167,22 +177,24 @@ void search_procmaps(const unsigned int mode) {
                 moded_pm = rx_procmaps();
                 if (moded_pm == NULL) {
                         printf("Failed to get any RX procmaps\n");
-                        return;
+                        return -1;
                 }
 
                 printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
                 moded_pm->address_st, moded_pm->address_en, 
                 moded_pm->size, moded_pm->permissions, moded_pm->pid);
 
+                //use rx_pm data to attach and scan proc memory
+                read_proc(moded_pm);
+                
                 break;
 
         default:
                 moded_pm = NULL;
-                return;
+                return -1;
         }
 
-        //use rx_pm data to attach and scan proc memory
-        read_proc(moded_pm);
+        return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -193,6 +205,7 @@ int main(int argc, char *argv[]) {
         }
 
         pid_t pid;
+        int status;
 
         //parse pid
         pid = strtol(argv[1], NULL, BASE10);
@@ -207,10 +220,14 @@ int main(int argc, char *argv[]) {
         //open, read, populate ProcMap obj, link 
         if (prep_mapfile(pid) < 0) return -1;
 
-        //get r-xp maps and use PTRACE_ATTACH
-        search_procmaps(RX);
-        search_procmaps(RX);
-        search_procmaps(RX);
+        //attach to pid
+        ptrace(PTRACE_ATTACH, pid, NULL, NULL);
+        wait(NULL);
+
+        //get r-xp maps and use PTRACE_PEEKTEXT
+        do {
+                status = search_procmaps(RX);
+        } while (status == 0);
 
         return 0;
 }
