@@ -12,34 +12,41 @@
 #define BASE10 10
 #define MAX_STRLEN 30
 
+enum { R, RW, RX, RWX };
+
 struct ProcMap {
+    long int pid;
 	long int address_st;
 	long int address_en;
   	long int size;
 	char *permissions;
 	struct ProcMap *next;
 };
-struct ProcMap *pm_head = NULL;
+struct ProcMap *pm_head;
+struct ProcMap *pm_cursor;
 
 int link_procmap(struct ProcMap *pm) {
     
-	if (pm == NULL) return -1;
+    if (pm == NULL) return -1;
 
-	if (pm_head == NULL) {
-		pm_head = pm;
-	} else {
-		pm->next = pm_head;
-		pm_head = pm;
-	}
+    if (pm_head == NULL) {
+        pm_head = pm;
+
+    } else {
+        pm->next = pm_head;
+        pm_head = pm;
+    }
 
 	return 0;
 }
 
-void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) {
+void get_data(const char *curr_line, 
+                const size_t line_len, 
+                    struct ProcMap *pm, 
+                        const long pid) {
 
 	char start_addr[MAX_STRLEN];
 	char end_addr[MAX_STRLEN];
-	char perms[MAX_STRLEN];
 	long int address_st;
 	long int address_en;
 	unsigned int i, j, k;
@@ -59,6 +66,7 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	} if (k > MAX_STRLEN) return;
 	end_addr[k + 1] = '\0';
 
+    char *perms = malloc(MAX_STRLEN);
 	//permissions
 	for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
 		perms[k] = curr_line[j];
@@ -77,13 +85,14 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 		}
 	}
 
+    pm->pid = pid;
 	pm->address_st = address_st;
 	pm->address_en = address_en;
 	pm->size = address_en - address_st;
-    	pm->permissions = perms;
+    pm->permissions = perms;   
 }
 
-void read_mapfile(FILE *fd) {
+void read_mapfile(FILE *fd, const long pid) {
 
 	char *curr_line;
 	size_t line_len;
@@ -93,12 +102,14 @@ void read_mapfile(FILE *fd) {
 	while (getline(&curr_line, &line_len, fd) != -1) {
 
 		pm = malloc(sizeof(struct ProcMap));
-		get_data(curr_line, line_len, pm);
-        	//performs NULL test on pm as well 
+		get_data(curr_line, line_len, pm, pid);
+        //performs NULL test on pm as well 
 		if (link_procmap(pm) < 0) continue; 
 
-		printf("0x%lx\n0x%lx\n0x%lx\n\n", pm->address_st, pm->address_en, pm->size);
 	}
+
+    //initialise global cursor to start at head of list
+    pm_cursor = pm_head;
 }
 
 int prep_mapfile(const long pid) {
@@ -116,10 +127,63 @@ int prep_mapfile(const long pid) {
 		return -1;
 	}
 
-	read_mapfile(fd);
+	read_mapfile(fd, pid);
 
 	fclose(fd);
 	return 0;
+}
+
+void read_proc(struct ProcMap *pm) {
+
+    ptrace(PTRACE_ATTACH, pm->pid);
+}
+
+struct ProcMap *rx_procmaps() {
+    /*
+        pm_cursor is a global pointer used to search
+        the linked list of procmap nodes for r-xp 
+        permission nodes (at first, pm_cursor == pm_head). 
+    */
+    struct ProcMap *tmp_pm;
+
+    for (; pm_cursor != NULL; pm_cursor = pm_cursor->next) {
+
+        if (strncmp("r-xp", pm_cursor->permissions, 4) == 0) {
+            tmp_pm = pm_cursor;
+            pm_cursor = pm_cursor->next;
+            return tmp_pm; 
+        }
+    }
+
+    return pm_cursor;
+}
+
+void search_procmaps(const unsigned int mode) {
+    
+    struct ProcMap *moded_pm;
+
+    switch (mode) {
+        case (RX):
+
+            moded_pm = rx_procmaps();
+            if (moded_pm == NULL) {
+                printf("Failed to get any RX procmaps\n");
+                return;
+            }
+
+            printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
+            moded_pm->address_st, moded_pm->address_en, 
+            moded_pm->size, moded_pm->permissions, moded_pm->pid);
+            
+            break; 
+
+        default:
+            moded_pm = NULL;
+            return;
+    }
+
+    //use rx_pm data to attach and scan proc memory
+    read_proc(moded_pm);
 }
 
 int main(int argc, char *argv[]) {
@@ -141,7 +205,13 @@ int main(int argc, char *argv[]) {
             }
 	}
 
-	prep_mapfile(pid);
+    //open, read, populate ProcMap obj, link 
+	if (prep_mapfile(pid) < 0) return -1;
+    
+    //get r-xp maps and use PTRACE_ATTACH
+    search_procmaps(RX);
+    search_procmaps(RX);
+    search_procmaps(RX);
 
 	return 0;
 }
