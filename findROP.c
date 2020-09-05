@@ -149,7 +149,7 @@ void read_proc(struct ProcMap *pm) {
         for (uint64_t i = 0, j = 0; i < pm->size;  i += 8) {
 
                 curr_qword = ptrace(PTRACE_PEEKTEXT, pm->pid, pm->address_st + i, NULL);
-                if (curr_qword == BAD_WORD) return;
+                if (curr_qword == BAD_WORD) break;
                 printf("0x%lx\n", curr_qword);
                 buf[j] = curr_qword;
                 j++;
