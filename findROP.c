@@ -8,7 +8,8 @@
 #include <sys/wait.h>
 #include <errno.h>
 
-#define BASE 16
+#define BASE16 16
+#define BASE10 10
 #define MAX_STRLEN 30
 
 struct ProcMap {
@@ -18,8 +19,19 @@ struct ProcMap {
 	char *permissions;
 	struct ProcMap *next;
 };
+struct ProcMap *pm_head = NULL;
 
 int link_procmap(struct ProcMap *pm) {
+    
+    if (pm == NULL) return -1;
+
+    if (pm_head == NULL) {
+        pm_head = pm;
+
+    } else {
+        pm->next = pm_head;
+        pm_head = pm;
+    }
 
 	return 0;
 }
@@ -33,14 +45,14 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	long int address_en;
 	unsigned int i, j, k;
 
-	//start addr
+	//start address
 	for (i = 0; curr_line[i] != '-'; i++) {
 		start_addr[i] = curr_line[i];
 
 	} if (i > MAX_STRLEN) return;
 	start_addr[i] = '\0';
 
-	//end addr
+	//end address
 	for (j = i + 1, k = 0; curr_line[j] != ' '; j++) {
 		end_addr[k] = curr_line[j];
 		k++;
@@ -48,16 +60,16 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	} if (k > MAX_STRLEN) return;
 	end_addr[k + 1] = '\0';
 
-	//perms
+	//permissions
 	for (j = k + 1, k = 0; curr_line[j] != ' '; j++) {
 		perms[k] = curr_line[j];
 		k++;
 
 	} if (k > MAX_STRLEN) return;
-	end_addr[k + 1] = '\0';
+	perms[k + 1] = '\0';
 
-	address_st = strtol(start_addr, NULL, 16);
-	address_en = strtol(end_addr, NULL, 16);
+	address_st = strtol(start_addr, NULL, BASE16);
+	address_en = strtol(end_addr, NULL, BASE16);
 
 	if (address_st == 0 || address_en == 0) {
 		if (errno == EINVAL) {
@@ -69,6 +81,7 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	pm->address_st = address_st;
 	pm->address_en = address_en;
 	pm->size = address_en - address_st;
+    pm->permissions = perms;
 
 }
 
@@ -83,7 +96,8 @@ void read_mapfile(FILE *fd) {
 
 		pm = malloc(sizeof(struct ProcMap));
 		get_data(curr_line, line_len, pm);
-		link_procmap(pm);
+        //performs NULL test on pm as well 
+		if (link_procmap(pm) < 0) continue; 
 
 		printf("0x%lx\n0x%lx\n0x%lx\n\n", pm->address_st, pm->address_en, pm->size);
 	}
@@ -120,7 +134,7 @@ int main(int argc, char *argv[]) {
 	pid_t pid;
 
 	//parse pid
-	pid = strtol(argv[1], NULL, 10);
+	pid = strtol(argv[1], NULL, BASE10);
 	if (pid == 0) {
 	    if (errno == EINVAL) {
 		printf("Invalid process identifier. \
