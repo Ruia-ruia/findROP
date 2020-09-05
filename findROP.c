@@ -80,7 +80,7 @@ void get_data(const char *curr_line, const size_t line_len, struct ProcMap *pm) 
 	pm->address_st = address_st;
 	pm->address_en = address_en;
 	pm->size = address_en - address_st;
-    pm->permissions = perms;
+    	pm->permissions = perms;
 
 }
 
