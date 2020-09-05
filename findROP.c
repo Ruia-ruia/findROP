@@ -47,7 +47,6 @@ void get_data(const char *curr_line,
 
         char start_addr[MAX_STRLEN];
         char end_addr[MAX_STRLEN];
-        char *perms;
         long int address_st;
         long int address_en;
         unsigned int i, j, k;
@@ -68,7 +67,7 @@ void get_data(const char *curr_line,
         end_addr[k + 1] = '\0';
 
         //permissions
-        perms = malloc(MAX_STRLEN);
+        char *perms = malloc(MAX_STRLEN);
         for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
                 perms[k] = curr_line[j];
                 k++;
@@ -164,22 +163,22 @@ void search_procmaps(const unsigned int mode) {
         struct ProcMap *moded_pm;
 
         switch (mode) {
-                case (RX):
-                        moded_pm = rx_procmaps();
-                        if (moded_pm == NULL) {
-                                printf("Failed to get any RX procmaps\n");
-                                return;
-                        }
-
-                        printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
-                        moded_pm->address_st, moded_pm->address_en, 
-                        moded_pm->size, moded_pm->permissions, moded_pm->pid);
-
-                        break;
-
-                default:
-                        moded_pm = NULL;
+        case (RX):
+                moded_pm = rx_procmaps();
+                if (moded_pm == NULL) {
+                        printf("Failed to get any RX procmaps\n");
                         return;
+                }
+
+                printf("0x%lx\n0x%lx\n0x%lx\n%s\n%ld\n\n", 
+                moded_pm->address_st, moded_pm->address_en, 
+                moded_pm->size, moded_pm->permissions, moded_pm->pid);
+
+                break;
+
+        default:
+                moded_pm = NULL;
+                return;
         }
 
         //use rx_pm data to attach and scan proc memory
