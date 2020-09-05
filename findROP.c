@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <stdint.h>
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <sys/types.h>
@@ -17,10 +18,10 @@
 enum { R, RW, RX, RWX };
 
 struct ProcMap {
-        unsigned long int pid;
-        long int address_st;
-        long int address_en;
-        unsigned long int size;
+        uint64_t pid;
+        uint64_t address_st;
+        uint64_t address_en;
+        uint64_t size;
         char *permissions;
         struct ProcMap *next;
 };
@@ -45,12 +46,12 @@ int link_procmap(struct ProcMap *pm) {
 void get_data(const char *curr_line, 
                     const size_t line_len, 
                             struct ProcMap *pm, 
-                                    const long pid) {
+                                    uint64_t pid) {
 
         char start_addr[MAX_STRLEN];
         char end_addr[MAX_STRLEN];
-        long int address_st;
-        long int address_en;
+        uint64_t address_st;
+        uint64_t address_en;
         unsigned int i, j, k;
 
         //start address
@@ -94,7 +95,7 @@ void get_data(const char *curr_line,
         pm->permissions = perms;   
 }
 
-void read_mapfile(FILE *fd, const long pid) {
+void read_mapfile(FILE *fd, const uint64_t pid) {
 
         char *curr_line;
         size_t line_len;
@@ -114,7 +115,7 @@ void read_mapfile(FILE *fd, const long pid) {
         pm_cursor = pm_head;
 }
 
-int prep_mapfile(const long pid) {
+int prep_mapfile(const uint64_t pid) {
 
         char filename[MAX_STRLEN];
         FILE *fd;
@@ -136,21 +137,21 @@ int prep_mapfile(const long pid) {
 }
 
 void read_proc(struct ProcMap *pm) {
-        printf("Entered proc_map\n");
+        printf("Entered read_proc\n");
 
-        long int curr_word;
-        int save_offset;
-        char *buf;
+        uint32_t save_offset;
+        uint64_t curr_qword;
+        uint64_t *buf;
         char *buf_cursor; //for char-wide granularity 
 
         buf = malloc(pm->size);
 
-        for (int i = 0; i < pm->size;  i += 8) {
-                curr_word = ptrace(PTRACE_PEEKTEXT, pm->pid, pm->address_st + i, NULL);
-                if (curr_word == BAD_WORD) return;
+        for (uint64_t i = 0, j = 0; i < pm->size;  i += 8) {
 
-                memcpy(&buf[i], &curr_word, 8);
-                printf("0x%lx\n", curr_word);
+                curr_qword = ptrace(PTRACE_PEEKTEXT, pm->pid, pm->address_st + i, NULL);
+                if (curr_qword == BAD_WORD) return;
+                buf[j] = curr_qword;
+                j++;
         }
 
         free(buf);
@@ -176,7 +177,7 @@ permission nodes (at first, pm_cursor == pm_head).
         return NULL;
 }
 
-int search_procmaps(const unsigned int mode) {
+int search_procmaps(const uint64_t mode) {
 
         struct ProcMap *moded_pm;
 
