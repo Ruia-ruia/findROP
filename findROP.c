@@ -136,13 +136,27 @@ int prep_mapfile(const uint64_t pid) {
         return 0;
 }
 
+int scan_qword(uint64_t curr_qword) {
+
+        char *qword_cursor; //for char-wide granularity 
+
+        qword_cursor = (char *)&curr_qword;
+
+        for (uint8_t i = 0; i < 64; i++) {
+                if (qword_cursor[i] == (char)0xc3) {
+                        return i;
+                }
+        }
+
+        return -1;
+}
+
 void read_proc(struct ProcMap *pm) {
         printf("Entered read_proc\n");
 
-        uint32_t save_offset;
+        int save_offset;
         uint64_t curr_qword;
         uint64_t *buf;
-        char *buf_cursor; //for char-wide granularity 
 
         buf = malloc(pm->size);
 
@@ -150,7 +164,14 @@ void read_proc(struct ProcMap *pm) {
 
                 curr_qword = ptrace(PTRACE_PEEKTEXT, pm->pid, pm->address_st + i, NULL);
                 if (curr_qword == BAD_WORD) break;
-                printf("0x%lx\n", curr_qword);
+ 
+                
+                save_offset = scan_qword(curr_qword);
+
+                if (save_offset > -1) {
+                        printf("got one ! 0x%lx\n", curr_qword);
+                }
+                
                 buf[j] = curr_qword;
                 j++;
         }
