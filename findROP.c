@@ -28,7 +28,9 @@ struct ProcMap {
 struct ProcMap *pm_head;
 struct ProcMap *pm_cursor;
 
-int link_procmap(struct ProcMap *pm) {
+int 
+link_procmap(struct ProcMap *pm) 
+{
 
         if (pm == NULL) return -1;
 
@@ -43,10 +45,12 @@ int link_procmap(struct ProcMap *pm) {
         return 0;
 }
 
-void get_data(const char *curr_line, 
-                    const size_t line_len, 
-                            struct ProcMap *pm, 
-                                    uint64_t pid) {
+void 
+get_data(const char *curr_line, 
+         const size_t line_len, 
+         struct ProcMap *pm, 
+         uint64_t pid) 
+{
 
         char start_addr[MAX_STRLEN];
         char end_addr[MAX_STRLEN];
@@ -56,26 +60,26 @@ void get_data(const char *curr_line,
 
         //start address
         for (i = 0; curr_line[i] != '-'; i++) {
+                if (i > MAX_STRLEN) return;
                 start_addr[i] = curr_line[i];
-
-        } if (i > MAX_STRLEN) return;
+        }
         start_addr[i] = '\0';
 
         //end address
         for (j = i + 1, k = 0; curr_line[j] != ' '; j++) {
+                if (k > MAX_STRLEN) return;
                 end_addr[k] = curr_line[j];
                 k++;
-
-        } if (k > MAX_STRLEN) return;
+        }
         end_addr[k + 1] = '\0';
 
         //permissions
         char *perms = malloc(MAX_STRLEN);
         for (j = j + 1, k = 0; curr_line[j] != ' '; j++) {
+                if (k > MAX_STRLEN) return;
                 perms[k] = curr_line[j];
                 k++;
-
-        } if (k > MAX_STRLEN) return;
+        }
         perms[k] = '\0';
 
         address_st = strtol(start_addr, NULL, BASE16);
@@ -95,7 +99,9 @@ void get_data(const char *curr_line,
         pm->permissions = perms;   
 }
 
-void read_mapfile(FILE *fd, const uint64_t pid) {
+void 
+read_mapfile(FILE *fd, const uint64_t pid) 
+{
 
         char *curr_line;
         size_t line_len;
@@ -115,7 +121,9 @@ void read_mapfile(FILE *fd, const uint64_t pid) {
         pm_cursor = pm_head;
 }
 
-int prep_mapfile(const uint64_t pid) {
+int 
+prep_mapfile(const uint64_t pid) 
+{
 
         char filename[MAX_STRLEN];
         FILE *fd;
@@ -136,7 +144,9 @@ int prep_mapfile(const uint64_t pid) {
         return 0;
 }
 
-int scan_qword(uint64_t curr_qword) {
+int 
+scan_qword(uint64_t curr_qword) 
+{
 
         char *qword_cursor; //for char-wide granularity 
 
@@ -151,7 +161,9 @@ int scan_qword(uint64_t curr_qword) {
         return -1;
 }
 
-void read_proc(struct ProcMap *pm) {
+void 
+read_proc(struct ProcMap *pm) 
+{
         printf("Entered read_proc\n");
 
         int save_offset;
@@ -179,7 +191,9 @@ void read_proc(struct ProcMap *pm) {
         free(buf);
 }
 
-struct ProcMap *rx_procmaps() {
+struct ProcMap* 
+rx_procmaps() 
+{
 /*
 pm_cursor is a global pointer used to search
 the linked list of procmap nodes for r-xp 
@@ -199,7 +213,9 @@ permission nodes (at first, pm_cursor == pm_head).
         return NULL;
 }
 
-int search_procmaps(const uint64_t mode) {
+int 
+search_procmaps(const uint64_t mode) 
+{
 
         struct ProcMap *moded_pm;
 
@@ -228,8 +244,9 @@ int search_procmaps(const uint64_t mode) {
         return 0;
 }
 
-int main(int argc, char *argv[]) {
-
+int 
+main(int argc, char *argv[]) 
+{
         if (argc < 2) {
                 printf("Not enough arguments.\n");
                 return -1;
